@@ -54,20 +54,20 @@ public class testSelection {
 
     public static void main(String[] args) throws CancelException, IOException, InvalidClassFileException, ClassHierarchyException {
         /* 省略构建分析域（AnalysisScope）对象scope的过程 */
-        boolean classLevel=false;
-//        if(args.length<3){
-//            System.out.println("必须有三个参数");
-//        }
-//        if(args[0].equals("-c")){
-//            classLevel=true;
-//        }
-//        if(args[0].equals("-m")){
-//            classLevel=false;
-//        }
-//        String path=args[1];
-//        String changeInfoPath=args[2];
-        String path="D:\\ClassicAutomatedTesting\\5-MoreTriangle\\target";
-        String changeInfoPath="D:\\ClassicAutomatedTesting\\5-MoreTriangle\\data\\change_info.txt";
+        boolean classLevel=true;
+        if(args.length<3){
+            System.out.println("必须有三个参数");
+        }
+        if(args[0].equals("-c")){
+            classLevel=true;
+        }
+        if(args[0].equals("-m")){
+            classLevel=false;
+        }
+        String path=args[1];
+        String changeInfoPath=args[2];
+//        String path="D:\\ClassicAutomatedTesting\\0-CMD\\target";
+//        String changeInfoPath="D:\\ClassicAutomatedTesting\\0-CMD\\data\\change_info.txt";
 
         //读取变更信息内容
         FileInputStream inputStream = new FileInputStream(changeInfoPath);
@@ -142,43 +142,39 @@ public class testSelection {
             }
         }
 
-        for(CGNode node: cg) {
-            // node中包含了很多信息，包括类加载器、方法信息等，这里只筛选出需要的信息
-            if(node.getMethod() instanceof ShrikeBTMethod) {
-                // node.getMethod()返回一个比较泛化的IMethod实例，不能获取到我们想要的信息
-                // 一般地，本项目中所有和业务逻辑相关的方法都是ShrikeBTMethod对象
-                ShrikeBTMethod method = (ShrikeBTMethod) node.getMethod();
-                // 使用Primordial类加载器加载的类都属于Java原生类，我们一般不关心。
-                if("Application".equals(method.getDeclaringClass().getClassLoader().toString())) {
-                    // 获取声明该方法的类的内部表示
-                    String classInnerName = method.getDeclaringClass().getName().toString();
-                    // 获取方法签名
-                    String signature = method.getSignature();
-                    for (Iterator<CGNode> it = cg.getSuccNodes(node); it.hasNext(); ) {
-                        CGNode node1 = it.next();
-                        if(node1.getMethod() instanceof ShrikeBTMethod && legal.contains(node1)){
-                            ShrikeBTMethod method1 = (ShrikeBTMethod) node1.getMethod();
-                            if(!classLevel){
-                                depend.add("\""+method.getSignature()+"\""+" -> "+"\""+method1.getSignature()+"\"\n");
-                            }
-                            else{
-                                String a="\""+method.getDeclaringClass().getName().toString()+"\""+" -> "+"\""+method1.getDeclaringClass().getName().toString()+"\"\n";
-                                if(!depend.contains(a)){
-                                    depend.add(a);
-                                }
-                            }
-                        }
-                    }
-                    if(changeInfo.contains(classInnerName + " " + signature)){
-                        workList.add(node);
-                    }
-                    legal.add(node);
-                    System.out.println(classInnerName + " " + signature); }
-            }
-            else {
-                System.out.println(String.format("'%s'不是一个ShrikeBTMethod：%s",node.getMethod(), node.getMethod().getClass()));
-            }
-        }
+//        for(CGNode node: cg) {
+//            // node中包含了很多信息，包括类加载器、方法信息等，这里只筛选出需要的信息
+//            if(node.getMethod() instanceof ShrikeBTMethod) {
+//                // node.getMethod()返回一个比较泛化的IMethod实例，不能获取到我们想要的信息
+//                // 一般地，本项目中所有和业务逻辑相关的方法都是ShrikeBTMethod对象
+//                ShrikeBTMethod method = (ShrikeBTMethod) node.getMethod();
+//                // 使用Primordial类加载器加载的类都属于Java原生类，我们一般不关心。
+//                if("Application".equals(method.getDeclaringClass().getClassLoader().toString())) {
+//                    // 获取声明该方法的类的内部表示
+//                    String classInnerName = method.getDeclaringClass().getName().toString();
+//                    // 获取方法签名
+//                    String signature = method.getSignature();
+//                    for (Iterator<CGNode> it = cg.getSuccNodes(node); it.hasNext(); ) {
+//                        CGNode node1 = it.next();
+//                        if(node1.getMethod() instanceof ShrikeBTMethod && legal.contains(node1)){
+//                            ShrikeBTMethod method1 = (ShrikeBTMethod) node1.getMethod();
+//                            if(!classLevel){
+//                                depend.add("\""+method.getSignature()+"\""+" -> "+"\""+method1.getSignature()+"\"\n");
+//                            }
+//                            else{
+//                                String a="\""+method.getDeclaringClass().getName().toString()+"\""+" -> "+"\""+method1.getDeclaringClass().getName().toString()+"\"\n";
+//                                if(!depend.contains(a)){
+//                                    depend.add(a);
+//                                }
+//                            }
+//                        }
+//                    }
+//            }
+//            else {
+//                System.out.println(String.format("'%s'不是一个ShrikeBTMethod：%s",node.getMethod(), node.getMethod().getClass()));
+//            }
+//        }
+
         if(classLevel){
             System.out.println("workList--------------------------------------------------------------");
             ArrayList<CGNode> workList1=workList;
@@ -230,6 +226,35 @@ public class testSelection {
             }
         }
 
+        ArrayList<CGNode> result1=result;
+        if(classLevel){
+            result=new ArrayList<CGNode>();
+            for (CGNode node:legal){
+                boolean in=false;
+                ShrikeBTMethod method = (ShrikeBTMethod)  node.getMethod();
+                String classInnerName = method.getDeclaringClass().getName().toString();
+                for(CGNode node1:result1){
+                    ShrikeBTMethod method1 = (ShrikeBTMethod)  node1.getMethod();
+                    String classInnerName1 = method1.getDeclaringClass().getName().toString();
+                    if(classInnerName.equals(classInnerName1)){
+                        in=true;
+                    }
+                }
+                if(in){
+                    result.add(node);
+                }
+            }
+        }
+
+        result1=result;
+        result=new ArrayList<CGNode>();
+        for(CGNode node:result1){
+            ShrikeBTMethod method = (ShrikeBTMethod) node.getMethod();
+            if(!method.getSignature().contains("init")){
+                result.add(node);
+            }
+        }
+
         System.out.println("result--------------------------------------------------------------");
         File file2=null;
         if(classLevel){
@@ -250,19 +275,6 @@ public class testSelection {
             }
         }
         fileWriter.close();
-
-        File file3;
-        if(!classLevel){
-            file3=new File("./method-MoreTriangle.dot");
-        }
-        else{
-            file3=new File("./class-MoreTriangle.dot");
-        }
-        FileWriter fileWriter1 = new FileWriter(file3);
-        for(String s:depend){
-            fileWriter1.write(s);
-        }
-        fileWriter1.close();
     }
 }
 
